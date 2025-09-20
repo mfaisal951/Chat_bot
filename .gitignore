@@ -1,0 +1,25 @@
+# Ignore virtual environments
+chatbotenv/Lib/
+chatbotenv/Scripts/
+chatbotenv/Include/
+chatbotenv/pyvenv.cfg
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE settings
+.vscode/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Build / dist
+*.egg-info/
+dist/
+build/
