@@ -1,1 +1,110 @@
-jhjh
+name: Chatbot Tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, "3.10", "3.11"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-tk
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tensorflow
+        pip install keras
+        pip install nltk
+        pip install numpy
+        pip install pickle-mixin
+    
+    - name: Download NLTK data
+      run: |
+        python -c "import nltk; nltk.download('punkt'); nltk.download('wordnet')"
+    
+    - name: Check if model files exist
+      run: |
+        if [ ! -f "chatbot_model.h5" ]; then
+          echo "Warning: chatbot_model.h5 not found"
+        fi
+        if [ ! -f "words.pkl" ]; then
+          echo "Warning: words.pkl not found"
+        fi
+        if [ ! -f "classes.pkl" ]; then
+          echo "Warning: classes.pkl not found"
+        fi
+        if [ ! -f "intents.json" ]; then
+          echo "Error: intents.json not found - this is required!"
+          exit 1
+        fi
+    
+    - name: Test chatbot.py syntax
+      run: |
+        python -m py_compile chatbotenv/chatbot.py
+        echo "chatbot.py syntax is valid"
+    
+    - name: Test new.py syntax
+      run: |
+        python -m py_compile chatbotenv/new.py
+        echo "new.py syntax is valid"
+    
+    - name: Validate intents.json
+      run: |
+        python -c "
+        import json
+        import sys
+        try:
+            with open('intents.json', 'r') as f:
+                intents = json.load(f)
+            if 'intents' not in intents:
+                print('Error: intents.json missing intents key')
+                sys.exit(1)
+            print(f'Found {len(intents[\"intents\"])} intent categories')
+            for intent in intents['intents']:
+                if 'tag' not in intent or 'patterns' not in intent or 'responses' not in intent:
+                    print(f'Error: Intent missing required fields: {intent}')
+                    sys.exit(1)
+            print('intents.json is valid')
+        except json.JSONDecodeError as e:
+            print(f'Error: Invalid JSON in intents.json: {e}')
+            sys.exit(1)
+        except Exception as e:
+            print(f'Error: {e}')
+            sys.exit(1)
+        "
+    
+    - name: Test basic imports
+      run: |
+        python -c "
+        import sys
+        sys.path.append('chatbotenv')
+        try:
+            import random
+            import json
+            import pickle
+            import numpy as np
+            import nltk
+            from nltk.stem import WordNetLemmatizer
+            print('All required imports successful')
+        except ImportError as e:
+            print(f'Import error: {e}')
+            sys.exit(1)
+        "
